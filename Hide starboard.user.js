@@ -3,7 +3,7 @@
 // @namespace    https://github.com/LunarWatcher/userscripts/
 // @version      1.0.0
 // @description  Hides the starboard
-// @author       Olivia
+// @author       Olivia Zoe
 // @match        https://chat.stackoverflow.com/rooms/139/*
 // @grant        none
 // @require      http://code.jquery.com/jquery-latest.js
