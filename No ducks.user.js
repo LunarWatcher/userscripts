@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         No ducks
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  Gets rid of Quack Overflow in the Stack Exchange network.
 // @author       Olivia Zoe
 // @match       *://*.stackexchange.com/*
