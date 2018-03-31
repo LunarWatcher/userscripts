@@ -17,5 +17,4 @@
 (function() {
     'use strict';
     $(".quackoverflow").hide();
-    $.cookie("quack",1,{"path":"/","expires":3});
 })();
