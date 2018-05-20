@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tag removal
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.0
+// @version      1.0.1
 // @description  Easy tag burnination or removal
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -53,20 +53,25 @@ function init(){
 }
 
 function clearTags(){
-    console.log(document);
-    var tags = $(".post-tag")
-    var editDetails = $("#edit-comment");
+    var tags = $(".post-tag.rendered-element")
+    console.log(tags);
+    var editDetails;
+
+    if($("#question").length == 0){
+        editDetails = $("#edit-comment");
+    }else{
+        editDetails = $("#question .edit-comment");
+    }
 
     if(tags !== undefined){
         var keys = Object.keys(tagTargets);
-        outer: for (var i in keys) for(var j in tags){
+        outer: for (var i in keys) for(var j = tags.length - 1; j >= 0; j--){
             var key = keys[i];
-            console.log("Checking for the tag " + key);;
+            console.log("Checking for the tag " + key);
             if(tags[j].textContent === key){
-                tags[j].remove();
+                tags[j].children[0].click();
                 editDetails.val(tagTargets[key] + "; ");
                 tags = $(".post-tag");
-                continue outer;
             }
         }
     }
