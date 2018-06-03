@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.0.3
+// @version      1.0.4
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
