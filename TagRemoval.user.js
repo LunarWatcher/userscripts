@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.0.4
+// @version      1.0.5
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -10,9 +10,17 @@
 // @updateURL    https://github.com/LunarWatcher/userscripts/raw/master/TagRemoval.meta.js
 // ==/UserScript==
 
+class RInfo{
+    constructor(reason, additionalTag){
+        this.reason = reason;
+        this.additionalTag = additionalTag;
+    }
+}
+
 var reasons = {
     "ide": "IDE tags should not be used for questions that aren't about the IDE itself",
-    "genericBurnination": "Removed tag that's in the process of burnination; see meta"
+    "genericBurnination": "Removed tag that's in the process of burnination; see meta",
+    "python": "Questions on Python-specific versions should also be tagged with Python"
 };
 var tagTargets = {
     "adobe": "Removed the adobe tag as per https://graphicdesign.meta.stackexchange.com/questions/3455/project-bye-bye-adobe-tag",
@@ -24,6 +32,19 @@ var tagTargets = {
     "intellij": reasons["ide"],
     "intellij-idea": reasons["ide"]
 };
+
+//Needs regex <.<
+var cantBeAlone = {
+    "jquery": new RInfo("jQuery is a library, JS is the language", "javascript"),
+    "python-3.x": new RInfo(reasons["python"], "python"),
+    "python-2.x": new RInfo(reasons["python"], "python"),
+    "python-2.7": new RInfo(reasons["python"], "python"),
+    "python-2.6": new RInfo(reasons["python"], "python"),
+    "python-3.6": new RInfo(reasons["python"], "python"),
+    "python-3.5": new RInfo(reasons["python"], "python"),
+    "python-3.4": new RInfo(reasons["python"], "python"),
+    "python-3.3": new RInfo(reasons["python"], "python")
+}
 
 //Format: "tag name": ["tag replacement", "Replacement reason"]
 var tagReplacements = {
@@ -77,26 +98,81 @@ function clearTags(){
     }
 
     if(tags !== undefined){
-        var keys = Object.keys(tagTargets);
-        for (var i in keys) for(var j = tags.length - 1; j >= 0; j--){
-            var key = keys[i];
-            console.log("Checking for the tag " + key);
-            if(tags[j].textContent === key){
-                tags[j].children[0].click();
-                editDetails.val(tagTargets[key] + "; ");
-                tags = $(".post-tag");
-            }
-        }
-        keys = Object.keys(tagReplacements);
-        for( var n in keys) for(var m = tags.length - 1; m >= 0; m--){
-            var nKey = keys[n];
-            console.log("Checking for the tag " + nKey);
-            if(tags[m].textContent === nKey){
-                tags[m].children[0].click();
-                editDetails.val(tagReplacements[nKey][1] + "; ");
-                $(".tag-editor").find("input").val(tagReplacements[nKey][0]);
-                tags = $(".post-tag.rendered-element");
-            }
-        }
+        tags = removeTags(tags, editDetails);
+        tags = replaceTags(tags, editDetails);
+        tags = addTags(tags, editDetails);
+        tags.click();
     }
 }
+
+function addDetails(data, editDetails){
+    if(editDetails.textContent === undefined){
+        editDetails.val(data + "; ");
+    }else{
+        editDetails.val(editDetails.textContent + " " + data + "; ");
+    }
+}
+
+function removeTags(tags, editDetails){
+    var keys = Object.keys(tagTargets);
+    for (var i in keys) for(var j = tags.length - 1; j >= 0; j--){
+        var key = keys[i];
+        console.log("Checking for the tag " + key);
+        if(tags[j].textContent === key){
+            tags[j].children[0].click();
+
+            addDetails(tagTargets[key], editDetails);
+            tags = $(".post-tag.rendered-element");
+        }
+    }
+    return tags;
+}
+
+function replaceTags(tags, editDetails){
+    console.log("Tag replacement");
+    var keys = Object.keys(tagReplacements);
+    for(var i in keys) for(var j = tags.length - 1; j >= 0; j--){
+        var key = keys[i];
+        console.log("Checking for the tag " + key);
+        if(tags[j].textContent === key){
+            tags[j].children[0].click();
+            addDetails(tagReplacements[key][1], editDetails);
+            $(".tag-editor").find("input").val(tagReplacements[nKey][0]);
+            tags = $(".post-tag.rendered-element");
+        }
+    }
+    return tags;
+}
+
+function addTags(tags, editDetails){
+    console.log("Tag addition");
+    var mapped = [];
+    for(var x = tags.length - 1; x >= 0; x--){
+        mapped.push(tags[x].textContent);
+    }
+    console.log(mapped);
+    var keys = Object.keys(cantBeAlone);
+    console.log(keys);
+    console.log(keys.length);
+
+    for(var i = 0; i < keys.length; i++){
+        var key = keys[i];
+        var value = cantBeAlone[key];
+        var necessary = value.additionalTag;
+        var reason = value.reason;
+        console.log("Checking for " + key);
+
+        if(contains.call(mapped, key) && !contains.call(mapped, necessary)){
+            addDetails(reason, editDetails);
+            $(".tag-editor").find("input").val(value.additionalTag);
+            tags = $(".post-tag.rendered-element");
+        }
+    }
+
+    return tags;
+}
+
+var contains = function(item) {
+    var indexOf = Array.prototype.indexOf;
+    return indexOf.call(this, item) > -1;
+};
