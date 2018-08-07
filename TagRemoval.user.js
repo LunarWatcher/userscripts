@@ -25,9 +25,10 @@ var reasons = {
 var tagTargets = {
     "adobe": "Removed the adobe tag as per https://graphicdesign.meta.stackexchange.com/questions/3455/project-bye-bye-adobe-tag",
     "android-studio": reasons["ide"],
+    "android-studio-2.2.3": reasons["ide"],
     "android-studio-3.0": reasons["ide"],
     "android-studio-3.1": reasons["ide"],
-    "android-studio-2.2.3": reasons["ide"],
+    "android-studio-3.1.3": reasons["ide"],
     "android-studio-3.2": reasons["ide"],
     "intellij": reasons["ide"],
     "intellij-idea": reasons["ide"]
