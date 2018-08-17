@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.0.5
+// @version      1.0.8
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -20,37 +20,38 @@ class RInfo{
 var reasons = {
     "ide": "IDE tags should not be used for questions that aren't about the IDE itself",
     "genericBurnination": "Removed tag that's in the process of burnination; see meta",
-    "python": "Questions on Python-specific versions should also be tagged with Python"
-};
-var tagTargets = {
-    "adobe": "Removed the adobe tag as per https://graphicdesign.meta.stackexchange.com/questions/3455/project-bye-bye-adobe-tag",
-    "android-studio": reasons["ide"],
-    "android-studio-2.2.3": reasons["ide"],
-    "android-studio-3.0": reasons["ide"],
-    "android-studio-3.1": reasons["ide"],
-    "android-studio-3.1.3": reasons["ide"],
-    "android-studio-3.2": reasons["ide"],
-    "intellij": reasons["ide"],
-    "intellij-idea": reasons["ide"]
+    "python": "Questions on Python-specific versions should also be tagged with Python",
+    "java": "Questions tagging with java-specific versions should also be tagged [java]",
+    "version": "Questions tagging with specific versions should also be tagged with the base language/tool"
 };
 
-//Needs regex <.<
+var tagTargets = {
+    "adobe": "Removed the adobe tag as per https://graphicdesign.meta.stackexchange.com/questions/3455/project-bye-bye-adobe-tag",
+    "ibm": "The IBM tag is being burninated. See meta: https://meta.stackoverflow.com/questions/348131/the-ibm-tag-is-in-the-process-of-being-burninated"
+};
+
+var removeTagsIfPresent = {
+    "android-studio.*": new RInfo(reasons["ide"], ["android", "java"]),
+    "intellij-idea.*": new RInfo(reasons["ide"], ["android", "java"])
+}
+
 var cantBeAlone = {
-    "jquery": new RInfo("jQuery is a library, JS is the language", "javascript"),
-    "python-3.x": new RInfo(reasons["python"], "python"),
-    "python-2.x": new RInfo(reasons["python"], "python"),
-    "python-2.7": new RInfo(reasons["python"], "python"),
-    "python-2.6": new RInfo(reasons["python"], "python"),
-    "python-3.6": new RInfo(reasons["python"], "python"),
-    "python-3.5": new RInfo(reasons["python"], "python"),
-    "python-3.4": new RInfo(reasons["python"], "python"),
-    "python-3.3": new RInfo(reasons["python"], "python")
+    "jquery": new RInfo("jQuery is a library, JS is the language", ["javascript"]),
+    "python-.*": new RInfo(reasons["python"], ["python"]),
+    "java-.*": new RInfo(reasons["java"], ["java"]),
+    "android-studio-.*": new RInfo(reasons["version"], ["android-studio"]),
+    "excel-vba": new RInfo("Questions tagged excel-vba should also be tagged with excel and VBA. See meta: https://meta.stackoverflow.com/questions/370095/merging-the-excel-vba-into-vba-speak-now-or-forever-hold-your-peace",
+                           ["excel", "vba"])
 }
 
 //Format: "tag name": ["tag replacement", "Replacement reason"]
 var tagReplacements = {
-    "checkout" : ["vcs-checkout", "Checkout is used for questions about finishing transactions, not the version control system feature \"checkout\""]
+    "checkout" : ["vcs-checkout", "Checkout is used for questions about finishing transactions, not the version control system feature \"checkout\""],
 };
+
+var burn_button = "<a href=\"javascript:void(0);\" id='burn' class='grid--cell s-btn'>Burninate!</a>";
+
+var divClass = ".grid.gs8.gsx.pt12.pb16";
 
 (function() {
     'use strict';
@@ -78,10 +79,12 @@ function init(){
     if($("#question").length == 0){
         if($("#title").length == 0)
             return;
-        $("<a href=\"javascript:void(0);\" id='burn'>Burninate!</a>").appendTo('.form-submit');
+
+        $(burn_button).appendTo(divClass);
     }else{
 
-        $("<a href=\"javascript:void(0);\" id='burn'>Burninate!</a>").appendTo('#question .form-submit');
+        $(burn_button).appendTo('#question ' + divClass);
+
     }
      $("#burn").click(clearTags);
 
@@ -102,24 +105,20 @@ function clearTags(){
         tags = removeTags(tags, editDetails);
         tags = replaceTags(tags, editDetails);
         tags = addTags(tags, editDetails);
+        tags = conditionalBurning(tags, editDetails);
         tags.click();
     }
 }
 
 function addDetails(data, editDetails){
-    if(editDetails.textContent === undefined){
-        editDetails.val(data + "; ");
-    }else{
-        editDetails.val(editDetails.textContent + " " + data + "; ");
-    }
+    editDetails.append(" " + data + "; ");
 }
 
 function removeTags(tags, editDetails){
     var keys = Object.keys(tagTargets);
     for (var i in keys) for(var j = tags.length - 1; j >= 0; j--){
         var key = keys[i];
-        console.log("Checking for the tag " + key);
-        if(tags[j].textContent === key){
+        if(tags[j].textContent.match(new RegExp(key))){
             tags[j].children[0].click();
 
             addDetails(tagTargets[key], editDetails);
@@ -134,15 +133,59 @@ function replaceTags(tags, editDetails){
     var keys = Object.keys(tagReplacements);
     for(var i in keys) for(var j = tags.length - 1; j >= 0; j--){
         var key = keys[i];
-        console.log("Checking for the tag " + key);
-        if(tags[j].textContent === key){
+        if(tags[j].textContent.match(new RegExp(key))){
             tags[j].children[0].click();
-            addDetails(tagReplacements[key][1], editDetails);
-            $(".tag-editor").find("input").val(tagReplacements[nKey][0]);
+            var dat = tagReplacements[key];
+            var len = dat.length;
+            addDetails(tagReplacements[key][len - 1], editDetails);
+            $(".tag-editor").find("input").append(tagReplacements[key][0] + " ");
+            if(len > 2){
+                for(var li = 1; li < len - 1; li++){
+                    addTag(tagReplacements[key][li]);
+                }
+            }
             tags = $(".post-tag.rendered-element");
         }
     }
     return tags;
+}
+
+function conditionalBurning(tags, editDetails){
+    console.log("Conditional tag removal");
+    var mapped = [];
+    for(var x = tags.length - 1; x >= 0; x--){
+        mapped.push(tags[x].textContent);
+    }
+    var keys = Object.keys(removeTagsIfPresent);
+
+    for(var i = 0; i < keys.length; i++) for(var j = tags.length - 1; j >= 0; j--){
+
+        var key = keys[i];
+        var value = removeTagsIfPresent[key];
+        var necessary = value.additionalTag;
+        var reason = value.reason;
+        console.log("Checking for " + key);
+
+        if(tags[j].textContent.match(new RegExp(key))){
+            for(var necessaryIndex in necessary){
+                var tag = necessary[necessaryIndex];
+                if(contains(mapped, new RegExp(tag))){
+                    tags[j].children[0].click();
+
+                    addDetails(tagTargets[key], editDetails);
+                    tags = $(".post-tag.rendered-element");
+                    break;
+                }
+            }
+        }
+
+    }
+
+    return tags;
+}
+
+function addTag(tag){
+    $(".tag-editor").find("input").append(tag + " ");
 }
 
 function addTags(tags, editDetails){
@@ -153,27 +196,40 @@ function addTags(tags, editDetails){
     }
     console.log(mapped);
     var keys = Object.keys(cantBeAlone);
-    console.log(keys);
-    console.log(keys.length);
 
     for(var i = 0; i < keys.length; i++){
+
         var key = keys[i];
         var value = cantBeAlone[key];
         var necessary = value.additionalTag;
         var reason = value.reason;
-        console.log("Checking for " + key);
+        var keyRegex = new RegExp(key);
 
-        if(contains.call(mapped, key) && !contains.call(mapped, necessary)){
-            addDetails(reason, editDetails);
-            $(".tag-editor").find("input").val(value.additionalTag);
-            tags = $(".post-tag.rendered-element");
+        if(contains(mapped, keyRegex)){
+
+            console.log("Checking for " + key + " with " + necessary + " as replacements.");
+            for(var nTag in necessary){
+                var tag = necessary[nTag];
+                if(doesNotContain(mapped, new RegExp("^" + tag + "$"))){
+                    addDetails(reason, editDetails);
+
+                    console.log("Adding tag: " + tag);
+                    $(".tag-editor").find("input").val(tag);
+                    $(".tag-editor").click();
+                    tags = $(".post-tag.rendered-element");
+
+                }
+            }
         }
+
     }
 
     return tags;
 }
 
-var contains = function(item) {
-    var indexOf = Array.prototype.indexOf;
-    return indexOf.call(this, item) > -1;
-};
+function doesNotContain(list, regex){
+	return !contains(list, regex);
+}
+function contains(list, regex){
+	return list.some((it) => it.match(regex));
+}
