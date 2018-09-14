@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.1.0
+// @version      1.1.1
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -198,7 +198,7 @@ function conditionalBurning(tags, editDetails){
                 if(contains(mapped, new RegExp(tag))){
                     tags[j].children[0].click();
 
-                    addDetails(tagTargets[key], editDetails);
+                    addDetails(reason, editDetails);
                     tags = $(TAG_CLASS);
                     break;
                 }
