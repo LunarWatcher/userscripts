@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.0.8
+// @version      1.1.0
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -10,14 +10,14 @@
 // @updateURL    https://github.com/LunarWatcher/userscripts/raw/master/TagRemoval.meta.js
 // ==/UserScript==
 
-class RInfo{
+class ReplacementInfo{
     constructor(reason, additionalTag){
         this.reason = reason;
         this.additionalTag = additionalTag;
     }
 }
 
-var reasons = {
+const reasons = {
     "ide": "IDE tags should not be used for questions that aren't about the IDE itself",
     "genericBurnination": "Removed tag that's in the process of burnination; see meta",
     "python": "Questions on Python-specific versions should also be tagged with Python",
@@ -25,60 +25,67 @@ var reasons = {
     "version": "Questions tagging with specific versions should also be tagged with the base language/tool"
 };
 
-var tagTargets = {
+const tagTargets = {
     "adobe": "Removed the adobe tag as per https://graphicdesign.meta.stackexchange.com/questions/3455/project-bye-bye-adobe-tag",
     "ibm": "The IBM tag is being burninated. See meta: https://meta.stackoverflow.com/questions/348131/the-ibm-tag-is-in-the-process-of-being-burninated"
 };
 
-var removeTagsIfPresent = {
-    "android-studio.*": new RInfo(reasons["ide"], ["android", "java"]),
-    "intellij-idea.*": new RInfo(reasons["ide"], ["android", "java"])
+const removeTagsIfPresent = {
+    "android-studio.*": new ReplacementInfo(reasons["ide"], ["^android$", "java"]),
+    "intellij-idea.*": new ReplacementInfo(reasons["ide"], ["^android$", "java"])
 }
 
-var cantBeAlone = {
-    "jquery": new RInfo("jQuery is a library, JS is the language", ["javascript"]),
-    "python-.*": new RInfo(reasons["python"], ["python"]),
-    "java-.*": new RInfo(reasons["java"], ["java"]),
-    "android-studio-.*": new RInfo(reasons["version"], ["android-studio"]),
-    "excel-vba": new RInfo("Questions tagged excel-vba should also be tagged with excel and VBA. See meta: https://meta.stackoverflow.com/questions/370095/merging-the-excel-vba-into-vba-speak-now-or-forever-hold-your-peace",
-                           ["excel", "vba"])
+const cantBeAlone = {
+    "^jquery": new ReplacementInfo("jQuery is a library, JS is the language", ["javascript"]),
+    "^python-.*": new ReplacementInfo(reasons["python"], ["python"]),
+    "^java-.*": new ReplacementInfo(reasons["java"], ["java"]),
+    "^android-studio-.*": new ReplacementInfo(reasons["version"], ["android-studio"]),
+    "^excel-vba": new ReplacementInfo("Questions tagged excel-vba should also be tagged with excel and VBA. See meta: https://meta.stackoverflow.com/questions/370095/merging-the-excel-vba-into-vba-speak-now-or-forever-hold-your-peace",
+                                      ["excel", "vba"])
 }
 
 //Format: "tag name": ["tag replacement", "Replacement reason"]
-var tagReplacements = {
+const tagReplacements = {
     "checkout" : ["vcs-checkout", "Checkout is used for questions about finishing transactions, not the version control system feature \"checkout\""],
 };
 
-var burn_button = "<a href=\"javascript:void(0);\" id='burn' class='grid--cell s-btn'>Burninate!</a>";
+const divClass = ".grid.gs8.gsx.pt12.pb16";
+const TAG_CLASS = ".s-tag.rendered-element";
+const EDITOR_CLASS = ".wmd-input";
+const BUTTON_ID = "burn";
 
-var divClass = ".grid.gs8.gsx.pt12.pb16";
+const burn_button = "<a href=\"javascript:void(0);\" id='" + BUTTON_ID + "' class='grid--cell s-btn'>Burninate!</a>";
+const DATA_KEY = "Retagger-";
+const DEBUG = false;
 
 (function() {
     'use strict';
-
-    StackExchange.using('inlineEditing', function() {
-            StackExchange.ready(function() {
-                $('#post-form').each(function(){
-                    init();
-                });
-            });
-        });
-        $(document).ajaxComplete(function() {
-            StackExchange.ready(function() {
+    StackExchange.using('inlineEditing',function() {
+        StackExchange.ready(function() {
+            $('#post-form').each(function(){
                 init();
             });
         });
+    });
+    $(document).ajaxComplete(function() {
+        StackExchange.ready(function() {
+            init();
+        });
+    });
 
 })();
 
 function init(){
 
-    if($("#burn").length > 0){
-        $("#burn").remove();
+    if($("#" + BUTTON_ID).length > 0){
+        return;
     }
     if($("#question").length == 0){
-        if($("#title").length == 0)
+        if($("#title").length == 0){
+            if(DEBUG)
+                console.log("Non-inline answer editor. Ignoring...");
             return;
+        }
 
         $(burn_button).appendTo(divClass);
     }else{
@@ -86,13 +93,16 @@ function init(){
         $(burn_button).appendTo('#question ' + divClass);
 
     }
-     $("#burn").click(clearTags);
+    $("#burn").click(clearTags);
 
 }
 
 function clearTags(){
-    var tags = $(".post-tag.rendered-element")
-    console.log(tags);
+    var tags = $(TAG_CLASS)
+    if(DEBUG){
+        console.log("Tags to process:");
+        console.log(tags);
+    }
     var editDetails;
 
     if($("#question").length == 0){
@@ -100,18 +110,32 @@ function clearTags(){
     }else{
         editDetails = $("#question .edit-comment");
     }
+    if(DEBUG)
+        console.log(editDetails);
+    if(editDetails === undefined)
+        throw new Error();
 
     if(tags !== undefined){
         tags = removeTags(tags, editDetails);
         tags = replaceTags(tags, editDetails);
         tags = addTags(tags, editDetails);
         tags = conditionalBurning(tags, editDetails);
-        tags.click();
+        tags.focus();
     }
 }
 
 function addDetails(data, editDetails){
-    editDetails.append(" " + data + "; ");
+    var existing = editDetails.value;
+    if(existing === undefined)
+        existing = ""
+    else if(existing.length != 0)
+        existing = existing + ";";
+    if(existing.contains(data)){
+        if(DEBUG)
+            console.log("Skipping duplicate reason...");
+        return;
+    }
+    editDetails.val(existing + " " + data + "; ");
 }
 
 function removeTags(tags, editDetails){
@@ -122,14 +146,15 @@ function removeTags(tags, editDetails){
             tags[j].children[0].click();
 
             addDetails(tagTargets[key], editDetails);
-            tags = $(".post-tag.rendered-element");
+            tags = $(TAG_CLASS);
         }
     }
     return tags;
 }
 
 function replaceTags(tags, editDetails){
-    console.log("Tag replacement");
+    if(DEBUG)
+        console.log("Tag replacement");
     var keys = Object.keys(tagReplacements);
     for(var i in keys) for(var j = tags.length - 1; j >= 0; j--){
         var key = keys[i];
@@ -144,14 +169,15 @@ function replaceTags(tags, editDetails){
                     addTag(tagReplacements[key][li]);
                 }
             }
-            tags = $(".post-tag.rendered-element");
+            tags = $(TAG_CLASS);
         }
     }
     return tags;
 }
 
 function conditionalBurning(tags, editDetails){
-    console.log("Conditional tag removal");
+    if(DEBUG)
+        console.log("Conditional tag removal");
     var mapped = [];
     for(var x = tags.length - 1; x >= 0; x--){
         mapped.push(tags[x].textContent);
@@ -173,7 +199,7 @@ function conditionalBurning(tags, editDetails){
                     tags[j].children[0].click();
 
                     addDetails(tagTargets[key], editDetails);
-                    tags = $(".post-tag.rendered-element");
+                    tags = $(TAG_CLASS);
                     break;
                 }
             }
@@ -189,7 +215,8 @@ function addTag(tag){
 }
 
 function addTags(tags, editDetails){
-    console.log("Tag addition");
+    if(DEBUG)
+        console.log("Tag addition");
     var mapped = [];
     for(var x = tags.length - 1; x >= 0; x--){
         mapped.push(tags[x].textContent);
@@ -216,7 +243,7 @@ function addTags(tags, editDetails){
                     console.log("Adding tag: " + tag);
                     $(".tag-editor").find("input").val(tag);
                     $(".tag-editor").click();
-                    tags = $(".post-tag.rendered-element");
+                    tags = $(TAG_CLASS);
 
                 }
             }
@@ -227,9 +254,22 @@ function addTags(tags, editDetails){
     return tags;
 }
 
+// Utils
+
 function doesNotContain(list, regex){
-	return !contains(list, regex);
+    return !contains(list, regex);
 }
 function contains(list, regex){
-	return list.some((it) => it.match(regex));
+    return list.some((it) => it.match(regex));
+}
+
+// Data storage
+
+// TODO for a later release.
+function save(key, value){
+    localData[DATA_KEY + key] = value;
+}
+
+function load(key){
+    return localData[key];
 }
