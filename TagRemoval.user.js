@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.1.1
+// @version      1.1.2
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -125,17 +125,24 @@ function clearTags(){
 }
 
 function addDetails(data, editDetails){
-    var existing = editDetails.value;
-    if(existing === undefined)
+    var existing = editDetails.val();
+    if(DEBUG)
+        console.log(existing);
+    if(existing == undefined)
         existing = ""
-    else if(existing.length != 0)
-        existing = existing + ";";
+    else if(existing.length != 0){
+        if(existing.substr(-1) !== ".")
+            existing = existing + "; ";
+        else existing = existing + " ";
+    }
     if(existing.contains(data)){
         if(DEBUG)
             console.log("Skipping duplicate reason...");
         return;
     }
-    editDetails.val(existing + " " + data + "; ");
+    if(DEBUG)
+        console.log(existing);
+    editDetails.val(existing + data + "; ");
 }
 
 function removeTags(tags, editDetails){
