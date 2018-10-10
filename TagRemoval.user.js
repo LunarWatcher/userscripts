@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.1.2
+// @version      1.1.3
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -26,27 +26,27 @@ const reasons = {
 };
 
 const tagTargets = {
-    "adobe": "Removed the adobe tag as per https://graphicdesign.meta.stackexchange.com/questions/3455/project-bye-bye-adobe-tag",
-    "ibm": "The IBM tag is being burninated. See meta: https://meta.stackoverflow.com/questions/348131/the-ibm-tag-is-in-the-process-of-being-burninated"
+    "code-review": reasons.genericBurnination
 };
 
 const removeTagsIfPresent = {
-    "android-studio.*": new ReplacementInfo(reasons["ide"], ["^android$", "java"]),
-    "intellij-idea.*": new ReplacementInfo(reasons["ide"], ["^android$", "java"])
+    "android-studio.*": new ReplacementInfo(reasons.ide, ["^android$", "java"]),
+    "intellij-idea.*": new ReplacementInfo(reasons.ide, ["^android$", "java"])
 }
 
+// TODO more sensible naming
 const cantBeAlone = {
     "^jquery": new ReplacementInfo("jQuery is a library, JS is the language", ["javascript"]),
-    "^python-.*": new ReplacementInfo(reasons["python"], ["python"]),
-    "^java-.*": new ReplacementInfo(reasons["java"], ["java"]),
-    "^android-studio-.*": new ReplacementInfo(reasons["version"], ["android-studio"]),
-    "^excel-vba": new ReplacementInfo("Questions tagged excel-vba should also be tagged with excel and VBA. See meta: https://meta.stackoverflow.com/questions/370095/merging-the-excel-vba-into-vba-speak-now-or-forever-hold-your-peace",
+    "^python-.*": new ReplacementInfo(reasons.python, ["python"]),
+    "^java-.*": new ReplacementInfo(reasons.java, ["java"]),
+    "^android-studio-.*": new ReplacementInfo(reasons.version, ["android-studio"]),
+    "^excel-vba": new ReplacementInfo("Questions tagged excel-vba should also be tagged with excel and VBA where possible. See meta: https://meta.stackoverflow.com/questions/370095/merging-the-excel-vba-into-vba-speak-now-or-forever-hold-your-peace",
                                       ["excel", "vba"])
 }
 
 //Format: "tag name": ["tag replacement", "Replacement reason"]
 const tagReplacements = {
-    "checkout" : ["vcs-checkout", "Checkout is used for questions about finishing transactions, not the version control system feature \"checkout\""],
+    "^checkout$" : ["vcs-checkout", "Checkout is used for questions about finishing transactions, not the version control system feature \"checkout\""],
 };
 
 const divClass = ".grid.gs8.gsx.pt12.pb16";
@@ -97,6 +97,8 @@ function init(){
 
 }
 
+// Burnination methods
+
 function clearTags(){
     var tags = $(TAG_CLASS)
     if(DEBUG){
@@ -116,15 +118,136 @@ function clearTags(){
         throw new Error();
 
     if(tags !== undefined){
-        tags = removeTags(tags, editDetails);
-        tags = replaceTags(tags, editDetails);
+        
+        
         tags = addTags(tags, editDetails);
         tags = conditionalBurning(tags, editDetails);
+        // Blatant tag removal is last, along with replaceTags.
+        // this is to allow other removal types to override it.
+        // An example of why this is like this: If there is a tag that should be removed, but 
+        // but the replacement varies, but has a fallback. For an instance, [tag][tag1] should
+        // be tagged [tag][tag-tag1], [tag][tag2] as [tag][tag-tag2], and anything else as [tag][tag3]. 
+        // This would be hard to do in other cases, but here, the conditional replacement is above
+        // regular replacement and removal. So in the above case, it would support this.
+        // If anything but the first two tag combos should be removed, that works too. 
+        
+        tags = replaceTags(tags, editDetails);
+        tags = removeTags(tags, editDetails);
         tags.focus();
     }
 }
 
+function replaceTags(tags, editDetails){
+    if(DEBUG)
+        console.log("Tag replacement");
+    var keys = Object.keys(tagReplacements);
+    for(var i in keys) for(var j = tags.length - 1; j >= 0; j--){
+        var key = keys[i];
+        if(tags[j].textContent.match(new RegExp(key))){
+            console.log(tags[j]);
+            tags[j].children[0].click();
+            var dat = tagReplacements[key];
+            var len = dat.length;
+            addDetails(tagReplacements[key][len - 1], editDetails);
+            addTag(tagReplacements[key][0]);
+            if(len > 2){
+                for(var li = 1; li < len - 1; li++){
+                    addTag(tagReplacements[key][li]);
+                }
+            }
+            tags = $(TAG_CLASS);
+        }
+    }
+    return tags;
+}
+
+function conditionalBurning(tags, editDetails){
+    if(DEBUG)
+        console.log("Conditional tag removal");
+    var mapped = [];
+    for(var x = tags.length - 1; x >= 0; x--){
+        mapped.push(tags[x].textContent);
+    }
+    var keys = Object.keys(removeTagsIfPresent);
+
+    for(var i = 0; i < keys.length; i++) for(var j = tags.length - 1; j >= 0; j--){
+
+        var key = keys[i];
+        var value = removeTagsIfPresent[key];
+        var necessary = value.additionalTag;
+        var reason = value.reason;
+        if(DEBUG)
+            console.log("Checking for " + key);
+
+        if(tags[j].textContent.match(new RegExp(key))){
+            for(var necessaryIndex in necessary){
+                var tag = necessary[necessaryIndex];
+                if(contains(mapped, new RegExp(tag))){
+                    tags[j].children[0].click();
+
+                    addDetails(reason, editDetails);
+                    tags = $(TAG_CLASS);
+                    break;
+                }
+            }
+        }
+
+    }
+
+    return tags;
+}
+
+function addTags(tags, editDetails){
+
+    if(DEBUG)
+        console.log("Tag addition: " + tags);
+    var mapped = [];
+    for(var x = tags.length - 1; x >= 0; x--){
+        mapped.push(tags[x].textContent);
+    }
+    console.log(mapped);
+    var keys = Object.keys(cantBeAlone);
+
+    for(var i = 0; i < keys.length; i++){
+
+        var key = keys[i];
+        var value = cantBeAlone[key];
+        var necessary = value.additionalTag;
+        var reason = value.reason;
+        var keyRegex = new RegExp(key);
+
+        if(contains(mapped, keyRegex)){
+            for(var nTag in necessary){
+                var tag = necessary[nTag];
+                if(doesNotContain(mapped, new RegExp("^" + tag + "$"))){
+                    addDetails(reason, editDetails);
+                    if(DEBUG)
+                        console.log("Adding tag: " + tag);
+                    addTag(tag);
+                    tags = $(TAG_CLASS);
+
+                }
+            }
+        }
+
+    }
+
+    return tags;
+}
+
+// SE utils
+
+function addTag(tag){
+    $(".tag-editor").find("input").val(tag);
+    $(".tag-editor").focus();
+}
+
 function addDetails(data, editDetails){
+    if(data == "" || data == undefined)
+        return;
+    if(editDetails == undefined){
+        console.log("cannot add edit details on undefined element");
+    }
     var existing = editDetails.val();
     if(DEBUG)
         console.log(existing);
@@ -159,107 +282,7 @@ function removeTags(tags, editDetails){
     return tags;
 }
 
-function replaceTags(tags, editDetails){
-    if(DEBUG)
-        console.log("Tag replacement");
-    var keys = Object.keys(tagReplacements);
-    for(var i in keys) for(var j = tags.length - 1; j >= 0; j--){
-        var key = keys[i];
-        if(tags[j].textContent.match(new RegExp(key))){
-            tags[j].children[0].click();
-            var dat = tagReplacements[key];
-            var len = dat.length;
-            addDetails(tagReplacements[key][len - 1], editDetails);
-            $(".tag-editor").find("input").append(tagReplacements[key][0] + " ");
-            if(len > 2){
-                for(var li = 1; li < len - 1; li++){
-                    addTag(tagReplacements[key][li]);
-                }
-            }
-            tags = $(TAG_CLASS);
-        }
-    }
-    return tags;
-}
 
-function conditionalBurning(tags, editDetails){
-    if(DEBUG)
-        console.log("Conditional tag removal");
-    var mapped = [];
-    for(var x = tags.length - 1; x >= 0; x--){
-        mapped.push(tags[x].textContent);
-    }
-    var keys = Object.keys(removeTagsIfPresent);
-
-    for(var i = 0; i < keys.length; i++) for(var j = tags.length - 1; j >= 0; j--){
-
-        var key = keys[i];
-        var value = removeTagsIfPresent[key];
-        var necessary = value.additionalTag;
-        var reason = value.reason;
-        console.log("Checking for " + key);
-
-        if(tags[j].textContent.match(new RegExp(key))){
-            for(var necessaryIndex in necessary){
-                var tag = necessary[necessaryIndex];
-                if(contains(mapped, new RegExp(tag))){
-                    tags[j].children[0].click();
-
-                    addDetails(reason, editDetails);
-                    tags = $(TAG_CLASS);
-                    break;
-                }
-            }
-        }
-
-    }
-
-    return tags;
-}
-
-function addTag(tag){
-    $(".tag-editor").find("input").append(tag + " ");
-}
-
-function addTags(tags, editDetails){
-    if(DEBUG)
-        console.log("Tag addition");
-    var mapped = [];
-    for(var x = tags.length - 1; x >= 0; x--){
-        mapped.push(tags[x].textContent);
-    }
-    console.log(mapped);
-    var keys = Object.keys(cantBeAlone);
-
-    for(var i = 0; i < keys.length; i++){
-
-        var key = keys[i];
-        var value = cantBeAlone[key];
-        var necessary = value.additionalTag;
-        var reason = value.reason;
-        var keyRegex = new RegExp(key);
-
-        if(contains(mapped, keyRegex)){
-
-            console.log("Checking for " + key + " with " + necessary + " as replacements.");
-            for(var nTag in necessary){
-                var tag = necessary[nTag];
-                if(doesNotContain(mapped, new RegExp("^" + tag + "$"))){
-                    addDetails(reason, editDetails);
-
-                    console.log("Adding tag: " + tag);
-                    $(".tag-editor").find("input").val(tag);
-                    $(".tag-editor").click();
-                    tags = $(TAG_CLASS);
-
-                }
-            }
-        }
-
-    }
-
-    return tags;
-}
 
 // Utils
 
