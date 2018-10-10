@@ -239,7 +239,7 @@ function addTags(tags, editDetails){
 
 function addTag(tag){
     $(".tag-editor").find("input").val(tag);
-    $(".tag-editor").focus();
+    $(".tag-editor").click();
 }
 
 function addDetails(data, editDetails){
