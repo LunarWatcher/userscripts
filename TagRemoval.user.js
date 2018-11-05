@@ -27,7 +27,7 @@ const reasons = {
 
 const tagTargets = {
     "code-review": reasons.genericBurnination,
-    "design": "The design tag is being burninated. See meta: https://meta.stackoverflow.com/questions/320690/the-design-tag-is-being-burninated"
+    "^design$": "The design tag is being burninated. See meta: https://meta.stackoverflow.com/questions/320690/the-design-tag-is-being-burninated"
 };
 
 const removeTagsIfPresent = {
