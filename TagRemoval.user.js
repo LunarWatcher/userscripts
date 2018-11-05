@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.1.3
+// @version      1.1.4
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -26,7 +26,8 @@ const reasons = {
 };
 
 const tagTargets = {
-    "code-review": reasons.genericBurnination
+    "code-review": reasons.genericBurnination,
+    "design": "The design tag is being burninated. See meta: https://meta.stackoverflow.com/questions/320690/the-design-tag-is-being-burninated"
 };
 
 const removeTagsIfPresent = {
