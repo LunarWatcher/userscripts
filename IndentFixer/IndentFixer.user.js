@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Indentation fixer
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      0.0.0.2
+// @version      0.0.0.3
 // @description  A userscript that theoretically should fix formatting.
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -103,6 +103,8 @@ function fixIndents() {
     // Iterate the lines
     for(let i = 0; i < lines.length; i++) {
         let line = lines[i];
+        let lineQuoted = line.startsWith("> ");
+        if(lineQuoted) line = line.substring(2);
         // This checking is somewhat complicated :/
 
         // First: Do we have breaking format and a list?
@@ -116,7 +118,7 @@ function fixIndents() {
             continue;
         }else if(comment) {
             comment = false;
-            reconstructed += line + "\n";
+            reconstructed += (lineQuoted ? "> " : "") + line + "\n";
             continue;
         }
         if(line == "") hadNewline = true;
@@ -146,6 +148,7 @@ function fixIndents() {
             }else {
                 // If we're not in a list, this is a code block.
                 codeBlock = true;
+                spaced = true;
             }
         } else if(line.startsWith("```")) {
             // no indent GH-style formatting breaks list formatting
@@ -167,9 +170,9 @@ function fixIndents() {
             // However, some people forget to indent stuff :/
             // So if we can find a lonely char, let's ~~bring it back into the heat~~ fix the indents.
             if(line.match(/^[\[\]\{\}()]/)){
-                reconstructed += getIndents(list, 1, getBaseIndent(spaced)) + line  + "\n";
+                reconstructed += (lineQuoted ? "> " : "") + getIndents(list, 1, getBaseIndent(spaced)) + line  + "\n";
             } else if(/<\/?.*>/) { // Yep, matching HTML with regex. Fite me. This could theoretically mismatch <br> right after the block.
-                reconstructed += getIndents(list, 1, getBaseIndent(spaced)) + line  + "\n";
+                reconstructed += (lineQuoted ? "> " : "") + getIndents(list, 1, getBaseIndent(spaced)) + line  + "\n";
             }
         }
         if(codeBlock) {
@@ -188,8 +191,8 @@ function fixIndents() {
             }
             let trimmedLine = line.trim();
             let level = queue.length + 1;
-            reconstructed += getIndents(list, level, getBaseIndent(spaced)) + trimmedLine + "\n";
-        } else reconstructed += line  + "\n";
+            reconstructed += (lineQuoted ? "> " : "") + getIndents(list, level, getBaseIndent(spaced)) + trimmedLine + "\n";
+        } else reconstructed += (lineQuoted ? "> " : "") + line  + "\n";
     }
 
     console.log(reconstructed);
