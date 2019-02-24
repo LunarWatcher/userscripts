@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Indentation fixer
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      0.0.0.1
+// @version      0.0.0.2
 // @description  A userscript that theoretically should fix formatting.
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
