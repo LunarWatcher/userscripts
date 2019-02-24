@@ -6,8 +6,8 @@
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
 // @grant        none
-// @downloadURL  https://github.com/LunarWatcher/userscripts/raw/master/IndentFixer/IndentFixer.user.js
-// @updateURL    https://github.com/LunarWatcher/userscripts/raw/master/IndentFixer/IndentFixer.user.js
+// @downloadURL  https://github.com/LunarWatcher/userscripts/raw/IndentFixer-Dev/IndentFixer/IndentFixer.user.js
+// @updateURL    https://github.com/LunarWatcher/userscripts/raw/IndentFixer-Dev/IndentFixer/IndentFixer.user.js
 // ==/UserScript==
 
 
