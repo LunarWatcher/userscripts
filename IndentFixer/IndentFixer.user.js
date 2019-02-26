@@ -11,8 +11,6 @@
 // ==/UserScript==
 
 
-const TAG_CLASS = ".s-tag.rendered-element";
-const EDITOR_CLASS = ".wmd-input";
 const BUTTON_ID = "clean_indents";
 
 const baseIndent = "    ";
@@ -88,125 +86,162 @@ function fixIndents() {
     // First: let's get the lines.
     let lines = text.split("\n");
 
-    // Now it gets complicated (:
-    // Define the token queue
-    let queue = [];
     // Define the output String
     let reconstructed = "";
     // Keep track of the current states:
-    let codeBlock = false;
-    let list = false;
-    let comment = false;
-    let spaced = false;
-    let hadNewline = false;
-    let quote = false;
-    // Iterate the lines
+    let persistent = {
+        tokens: []
+    };
+
+     // Iterate the lines
     for(let i = 0; i < lines.length; i++) {
         let line = lines[i];
-        let lineQuoted = line.startsWith("> ");
-        if(lineQuoted) line = line.substring(2);
-        // This checking is somewhat complicated :/
+        getData(persistent, line);
 
-        // First: Do we have breaking format and a list?
-        if((!comment && line.startsWith("---")) || line.startsWith("<!--")) {
-            // Both of these break lists.
-            if(list) list = false;
-        }
-        if(!codeBlock && line.startsWith("<!--") && !line.contains("-->")) comment = true;
-        if(comment && !line.contains("-->")) {
-            reconstructed += line + "\n";
-            continue;
-        }else if(comment) {
-            comment = false;
-            reconstructed += (lineQuoted ? "> " : "") + line + "\n";
-            continue;
-        }
-        if(line == "") hadNewline = true;
-        if(!quote)
-            quote = line.startsWith(">");
-        else if(quote && hadNewline && !line == "") {
-            quote = false;
-            hadNewline = false;
-        }
-        if(list && !codeBlock && !line.startsWith("    ") && hadNewline && !line == "") {
-            list = false;
-            hadNewline = false;
-        }
-        // Now we check four spaces
-        if(line.startsWith("    ")) {
-            // If we're in a list
-            if(list) {
-                if(line.startsWith("        " /*8 spaces*/)) {
-                    // 8 spaces == code
-                    codeBlock = true;
-                    spaced = true;
-                } else if(line.startsWith("    ```")) {
-                    // But four spaces followed by backticks is also a nested code block
-                    codeBlock = true;
-                    spaced = false;
-                } else continue; // In any other case, this isn't a code block. And we cannot possibly expect a simple script to identify code vs not code
-            }else {
-                // If we're not in a list, this is a code block.
-                codeBlock = true;
-                spaced = true;
-            }
-        } else if(line.startsWith("```")) {
-            // no indent GH-style formatting breaks list formatting
-            if(list) list = false;
-            if(codeBlock) {
-                codeBlock = false;
-                queue = [];
-            }
-            else {
-                codeBlock = true;
-                spaced = false;
-            }
-            reconstructed += line + "\n";
-            continue;
-            // If the block is spaced, we're currently in a block, and the line doesn't start with four spaces, the indent has come to an end.
-        } else if(spaced && codeBlock && !line.startsWith("    ")) {
-            codeBlock = false;
-            queue = [];
-            // However, some people forget to indent stuff :/
-            // So if we can find a lonely char, let's ~~bring it back into the heat~~ fix the indents.
-            if(line.match(/^[\[\]\{\}()]/)){
-                reconstructed += (lineQuoted ? "> " : "") + getIndents(list, 1, getBaseIndent(spaced)) + line  + "\n";
-            } else if(/<\/?.*>/) { // Yep, matching HTML with regex. Fite me. This could theoretically mismatch <br> right after the block.
-                reconstructed += (lineQuoted ? "> " : "") + getIndents(list, 1, getBaseIndent(spaced)) + line  + "\n";
-            }
-        }
-        if(codeBlock) {
-            for(let j = 0; j < line.length; j++) {
-                let char = line[j];
-                let flipped = flip(char);
-                if(flipped != null) {
-                    if(queue.length == 0) {
-                        queue.push(char);
-                    } else {
-                        let last = queue[queue.length - 1];
-                        if(last == flipped) queue.pop();
-                        else queue.push(char);
-                    }
-                }
-            }
-            let trimmedLine = line.trim();
-            let level = queue.length + 1;
-            reconstructed += (lineQuoted ? "> " : "") + getIndents(list, level, getBaseIndent(spaced)) + trimmedLine + "\n";
-        } else reconstructed += (lineQuoted ? "> " : "") + line  + "\n";
+        reconstructed += appendLine(persistent, persistent.line);
+
     }
 
     console.log(reconstructed);
 
 }
 
+function appendLine(persistent, lineToAppend) {
+    if(lineToAppend == "" || !persistent.codeBlock) {
+         return lineToAppend + "\n";
+    }
+    if(lineToAppend.startsWith("```") || lineToAppend.startsWith("    ```")) {
+         if(persistent.list) return "    ```\n"; else return "```\n";
+
+    }
+    // Okay, now it gets tricky x_x
+    // First of all, is this specific line HTML?
+    let regex = /<[a-zA-Z0-9\-_ \/]+>/gm;
+
+    let pre = persistent.tokens.length;
+    if(!/^\s*(?:#|\/\/|\s*\*|\/\*\*)/.test(lineToAppend)
+            && regex.test(lineToAppend)) {
+        // Yeah yeah, parsing HTML with Regex. Fight me.
+        // Some of the regex code has been generated by https://regex101.com/codegen?language=javascript
+        let m;
+        let construct = "";
+        while((m = regex.exec(lineToAppend)) !== null) {
+            if(m.index === regex.lastIndex) regex.lastIndex++;
+            m.forEach((match, groupIndex) => {
+                if(match.contains("hr") || match.contains("br")) {
+                    // forEach is annoying af xd can't use `continue`
+                } else {
+                    if(match.contains("/")){
+                        let pLen = persistent.tokens.length - 1;
+                        console.log(persistent.tokens);
+                        if(pLen + 1 > 0 && persistent.tokens[pLen <= 0 ? 0 : pLen].replace(/<>\//, "") == match.replace(/<>\//, "")) {
+                            persistent.tokens.pop();
+                        } else persistent.tokens.push(match);
+                    }
+                }
+            });
+        }
+    }
+    for(let i = 0; i < lineToAppend.length; i++) {
+        let char = lineToAppend[i];
+        let flipped = flip(char);
+        if(flipped != null) {
+            if(persistent.tokens.length == 0) persistent.tokens.push(char);
+            else {
+                if(persistent.tokens[persistent.tokens.length - 1] == flipped) persistent.tokens.pop();
+                else persistent.tokens.push(char);
+            }
+        }
+    }
+    let post = persistent.tokens.length;
+    let level = 0;
+    if(pre <= post) level = pre;
+    else level = post;
+
+    let indents = getIndents(persistent.list, level, getBaseIndent(persistent.spaced));
+    console.log(indents);
+    let line = lineToAppend.trim().replace(/^\s+/, "");
+    if(persistent.quote) indents = "> " + indents;
+    let u = indents + line + "\n";
+    console.log(indents.length);
+    return u;
+}
+
+function getData(persistent, line) {
+    let trimmedLine = line.trim();
+    let formattedLine = line;
+    if(!persistent.comment && formattedLine.startsWith("> ")) {
+        persistent.quote = true;
+        formattedLine = formattedLine.substring(2);
+    }
+    persistent.line = formattedLine;
+    if(line == "") {
+        persistent.hadNewline = true;
+        // Newlines are incredibly easy to handle: simply move on.
+        return;
+    } else {
+        // newlines break most formatting unless it's indented with four spaces.
+        // Which means quotes, lists, and code blocks (except spaced ones) break.
+        if(!line.startsWith("    ") && persistent.hadNewline) {
+            
+            persistent.list = false;
+            persistent.quote = false;
+
+            if(persistent.codeBlock && persistent.spaced){
+                persistent.codeBlock = false;
+                persistent.tokens = [];
+            }
+        }
+        persistent.hadNewline = false;
+    }
+
+
+    if(trimmedLine.startsWith("<!--") && !trimmedLine.contains("-->")) persistent.comment = true;
+    if(trimmedLine.contains("-->")) persistent.comment = false;
+    // Check if we have a list.
+    if(!persistent.codeBlock && !persistent.list && (trimmedLine.startsWith("-") || trimmedLine.startsWith("*") || /^\\d+\./.test(trimmedLine))) {
+        persistent.list == true;
+    }
+    if(line.startsWith("---") || line.startsWith("<!--")){
+        persistent.list = false;
+        if(persistent.spaced){
+            persistent.codeBlock = false;
+            persistent.tokens = [];
+        }
+    }
+
+    if(!persistent.comment) {
+        if(!persistent.codeBlock && ((!persistent.list && line.startsWith(baseIndent)) || line.startsWith(listIndent))) {
+            persistent.codeBlock = true;
+            persistent.spaced = true;
+        } else if(persistent.codeBlock && persistent.spaced && ((!persistent.list && !line.startsWith(baseIndent)) || !line.startsWith(listIndent))) {
+            persistent.codeBlock = false;
+            persistent.tokens = [];
+        } else if(!persistent.codeBlock && line.contains("```")){
+            if((!persistent.list && line.startsWith("```")) || (persistent.list && line.startsWith("    ```"))){
+                persistent.codeBlock = true;
+                persistent.spaced = false;
+            } else if(persistent.list && line.startsWith("```")){
+                persistent.codeBlock = true;
+                persistent.spaced = false;
+                persistent.list = false;
+            } else throw new Error("Failed to parse line: " + formattedLine);
+        } else if(persistent.codeBlock && line.startsWith("```")) {
+            persistent.tokens = [];
+            persistent.codeBlock = false;
+        }
+    }
+
+}
+
 function getBaseIndent(spaced) {
-    if(!spaced) return ""; else return "    ";
+    if(!spaced) return ""; else return baseIndent;
 }
 
 function getIndents(isList, level, baseIndent) {
     let base;
     if(isList) base = baseIndent + baseIndent; else base = baseIndent;
-    if(level == 1) return base;
+    if(level == 0) return base;
     else {
         for(let i = 0; i < level; i++) {
             base += baseIndent;
