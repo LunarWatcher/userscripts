@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.1.4
+// @version      1.2.0
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -17,6 +17,14 @@ class ReplacementInfo{
     }
 }
 
+class ReplacementInfo3 {
+    constructor(reason, targets, replacements) {
+        this.reason = reason;
+        this.targets = targets;
+        this.replacements = replacements;
+    }
+}
+
 const reasons = {
     "ide": "IDE tags should not be used for questions that aren't about the IDE itself",
     "genericBurnination": "Removed tag that's in the process of burnination; see meta",
@@ -24,15 +32,15 @@ const reasons = {
     "java": "Questions tagging with java-specific versions should also be tagged [java]",
     "version": "Questions tagging with specific versions should also be tagged with the base language/tool"
 };
-
+const androidJavaCombo = ["^android$", "^java$"];
 const tagTargets = {
     "code-review": reasons.genericBurnination,
     "^design$": "The design tag is being burninated. See meta: https://meta.stackoverflow.com/questions/320690/the-design-tag-is-being-burninated"
 };
 
 const removeTagsIfPresent = {
-    "android-studio.*": new ReplacementInfo(reasons.ide, ["^android$", "java"]),
-    "intellij-idea.*": new ReplacementInfo(reasons.ide, ["^android$", "java"])
+    "android-studio.*": new ReplacementInfo(reasons.ide, androidJavaCombo),
+    "intellij-idea.*": new ReplacementInfo(reasons.ide, androidJavaCombo),
 }
 
 // TODO more sensible naming
@@ -49,6 +57,12 @@ const cantBeAlone = {
 const tagReplacements = {
     "^checkout$" : ["vcs-checkout", "Checkout is used for questions about finishing transactions, not the version control system feature \"checkout\""],
 };
+
+const conditionalTagReplacements = {
+    "^glide$": new ReplacementInfo3("[glide] does not refer to the Android library - please use [android-glide] instead", androidJavaCombo, ["android-glide"])
+};
+let functions = [ addTags, conditionalBurning, replaceTags, removeTags, conditionalReplaceTags ];
+
 
 const divClass = ".grid.gs8.gsx.pt12.pb16";
 const TAG_CLASS = ".s-tag.rendered-element";
@@ -121,19 +135,10 @@ function clearTags(){
     if(tags !== undefined){
         
         
-        tags = addTags(tags, editDetails);
-        tags = conditionalBurning(tags, editDetails);
-        // Blatant tag removal is last, along with replaceTags.
-        // this is to allow other removal types to override it.
-        // An example of why this is like this: If there is a tag that should be removed, but 
-        // but the replacement varies, but has a fallback. For an instance, [tag][tag1] should
-        // be tagged [tag][tag-tag1], [tag][tag2] as [tag][tag-tag2], and anything else as [tag][tag3]. 
-        // This would be hard to do in other cases, but here, the conditional replacement is above
-        // regular replacement and removal. So in the above case, it would support this.
-        // If anything but the first two tag combos should be removed, that works too. 
-        
-        tags = replaceTags(tags, editDetails);
-        tags = removeTags(tags, editDetails);
+        for (var func in functions) {
+            functions[func](tags, editDetails);
+            tags = $(TAG_CLASS);
+        }
         tags.focus();
     }
 }
@@ -142,24 +147,60 @@ function replaceTags(tags, editDetails){
     if(DEBUG)
         console.log("Tag replacement");
     var keys = Object.keys(tagReplacements);
-    for(var i in keys) for(var j = tags.length - 1; j >= 0; j--){
+    for(var i in keys){
         var key = keys[i];
-        if(tags[j].textContent.match(new RegExp(key))){
-            console.log(tags[j]);
-            tags[j].children[0].click();
-            var dat = tagReplacements[key];
-            var len = dat.length;
-            addDetails(tagReplacements[key][len - 1], editDetails);
-            addTag(tagReplacements[key][0]);
-            if(len > 2){
-                for(var li = 1; li < len - 1; li++){
-                    addTag(tagReplacements[key][li]);
+        for(var j = tags.length - 1; j >= 0; j--){
+            
+            if(tags[j].textContent.match(new RegExp(key))){
+                tags[j].children[0].click();
+                var dat = tagReplacements[key];
+                var len = dat.length;
+                addDetails(tagReplacements[key][len - 1], editDetails);
+                addTag(tagReplacements[key][0]);
+                if(len > 2){
+                    for(var li = 1; li < len - 1; li++){
+                        addTag(tagReplacements[key][li]);
+                    }
                 }
+                tags = $(TAG_CLASS);
             }
-            tags = $(TAG_CLASS);
         }
     }
     return tags;
+}
+
+function conditionalReplaceTags(tags, editDetails) {
+    var keys = Object.keys(conditionalTagReplacements);
+    var mapped = [];
+    for(var x = tags.length - 1; x >= 0; x--){
+        mapped.push(tags[x].textContent);
+    }
+    for (var i in keys) {
+        let key = keys[i];
+        for(var j = tags.length - 1; j >= 0; j--) {
+            if(tags[j].textContent.match(new RegExp(key))) {
+                var data = conditionalTagReplacements[key];
+                var orCondition = data.targets;
+                var replacements = data.replacements;
+                if(replacements.length == 0) throw new Error("conditonalReplaceTags: Use replaceTags for this tag instead. Offending tag: " + key);
+                for(var ki in orCondition) {
+                    if(contains(mapped, new RegExp(orCondition[ki]))) {
+                        tags[j].children[0].click();
+                        addDetails(data.reason, editDetails);
+                        for(ti in replacements) {
+                            
+                            var tag = replacements[ti];
+                            if(!contains(mapped, new RegExp(tag)))
+                                addTag(tag);
+                        }
+                        tags = $(TAG_CLASS);
+                        break;
+                    }
+                }
+
+            }
+        }
+    }
 }
 
 function conditionalBurning(tags, editDetails){
