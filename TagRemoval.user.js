@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.2.1
+// @version      1.2.2
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -61,7 +61,7 @@ const tagReplacements = {
 // NOTE: Additions here are not required to be an array.
 const conditionalTagReplacements = {
     "^glide$": [ new ReplacementInfo3("[glide] does not refer to the Android library - please use [android-glide] instead", androidJavaCombo, ["android-glide"]), 
-                 new ReplacementInfo3("[glide] does not refer to the Go package manager - please use [glide-golang] instead.", [ "go" ], ["glide-golang"])
+                 new ReplacementInfo3("[glide] does not refer to the Go package manager - please use [glide-golang] instead.", [ "^go$" ], ["glide-golang"])
                ]
    
     
