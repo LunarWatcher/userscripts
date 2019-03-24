@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.2.0
+// @version      1.2.1
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -58,8 +58,13 @@ const tagReplacements = {
     "^checkout$" : ["vcs-checkout", "Checkout is used for questions about finishing transactions, not the version control system feature \"checkout\""],
 };
 
+// NOTE: Additions here are not required to be an array.
 const conditionalTagReplacements = {
-    "^glide$": new ReplacementInfo3("[glide] does not refer to the Android library - please use [android-glide] instead", androidJavaCombo, ["android-glide"])
+    "^glide$": [ new ReplacementInfo3("[glide] does not refer to the Android library - please use [android-glide] instead", androidJavaCombo, ["android-glide"]), 
+                 new ReplacementInfo3("[glide] does not refer to the Go package manager - please use [glide-golang] instead.", [ "go" ], ["glide-golang"])
+               ]
+   
+    
 };
 let functions = [ addTags, conditionalBurning, replaceTags, removeTags, conditionalReplaceTags ];
 
@@ -180,25 +185,39 @@ function conditionalReplaceTags(tags, editDetails) {
         for(var j = tags.length - 1; j >= 0; j--) {
             if(tags[j].textContent.match(new RegExp(key))) {
                 var data = conditionalTagReplacements[key];
-                var orCondition = data.targets;
-                var replacements = data.replacements;
-                if(replacements.length == 0) throw new Error("conditonalReplaceTags: Use replaceTags for this tag instead. Offending tag: " + key);
-                for(var ki in orCondition) {
-                    if(contains(mapped, new RegExp(orCondition[ki]))) {
-                        tags[j].children[0].click();
-                        addDetails(data.reason, editDetails);
-                        for(ti in replacements) {
-                            
-                            var tag = replacements[ti];
-                            if(!contains(mapped, new RegExp(tag)))
-                                addTag(tag);
-                        }
+                if(data.length) {
+                    for(var di in data) {
+                        var actualData = data[di];
+                        condRep(key, tags, editDetails, mapped, j, actualData);
                         tags = $(TAG_CLASS);
-                        break;
                     }
-                }
-
+                } else condRep(key, tags, editDetails, mapped, j, data)
+                
+                tags = $(TAG_CLASS);
             }
+        }
+    }
+}
+
+function condRep(key, tags, editDetails, mapped, j, data) {
+    if(!(data instanceof ReplacementInfo3)) {
+        throw new TypeError("Type mismatch: data needs to be instanceof ReplacementInfo3");
+    }
+    var orCondition = data.targets;
+    var replacements = data.replacements;
+    if(replacements.length == 0) throw new Error("conditonalReplaceTags: Use replaceTags for this tag instead. Offending tag: " + key);
+    for(var ki in orCondition) {
+        if(contains(mapped, new RegExp(orCondition[ki]))) {
+            tags[j].children[0].click();
+            addDetails(data.reason, editDetails);
+            for(ti in replacements) {
+                            
+                var tag = replacements[ti];
+                if(!contains(mapped, new RegExp(tag)))
+                    addTag(tag);
+                }
+            
+            break;
         }
     }
 }
