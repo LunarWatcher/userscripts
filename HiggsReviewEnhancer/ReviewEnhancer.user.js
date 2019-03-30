@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Higgs review enhancer
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.0.0
+// @version      1.0.1
 // @include      https://higgs.sobotics.org/review
 // @downloadURL  https://github.com/LunarWatcher/userscripts/raw/master/HiggsReviewEnhancer/ReviewEnhancer.user.js
 // @updateURL    https://github.com/LunarWatcher/userscripts/raw/master/HiggsReviewEnhancer/ReviewEnhancer.meta.js
@@ -90,7 +90,7 @@ function initMutationObserver() {
         } else console.log(key.which);
         let selected = data.selected;
         for (var i = 0; i < 4; i++) {
-            let btn = $("#" + ids[i]).addClass("highlight");
+            let btn = $("#" + ids[i]);
             if (selected != null && i == selected) btn.addClass("highlight");
             else btn.removeClass("highlight");
         }
