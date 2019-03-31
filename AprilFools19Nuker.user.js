@@ -13,5 +13,5 @@
 
 (function() {
     "use strict";
-    $.cookie("tm2019", "1", { expires: 2, path: '/' });
+    $.cookie("tm2019", "1", { expires: 2, path: '/' }); // source: https://meta.stackexchange.com/a/326007/332043
 })();
