@@ -3331,6 +3331,23 @@
                     }
                 }
             });
+            App.globals.replacedStrings.lsec.forEach(function(link, index, array) {
+                for(var r in App.globals.urlReplacements) {
+                    let f = App.globals.urlReplacements[r];
+                    let cache = link;
+
+                    if(f.expr.test(link)) {
+
+                        array[index] = link.replace(f.expr, f.replacement);
+
+                         if (f.reason in App.globals.reasons) {
+                            App.globals.reasons[f.reason].count += f.count;
+                        } else {
+                            App.globals.reasons[f.reason] = { reason: f.reason, count: 1};
+                        }
+                    }
+                }
+            });
 
 
             return data;
