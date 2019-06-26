@@ -186,9 +186,9 @@
                 replacement: "http://wiki.hashphp.org/PDO_Tutorial_for_MySQL_Developers",
                 reason: App.consts.reasons.sqlWarnings
             },
-            merciruial1: {
-                expr: /https?:\/\/mercurial.selenic.com\/(.*)/g,
-                relacement: "https://mercurial-scm.org/$1", 
+            mercurial1: {
+                expr: /https?:\/\/mercurial.selenic.com\/([a-zA-Z0-9/]*)/g,
+                replacement: "https://mercurial-scm.org/$1",
                 reason: "https://meta.stackoverflow.com/q/355960/6296561"
             }
         };
