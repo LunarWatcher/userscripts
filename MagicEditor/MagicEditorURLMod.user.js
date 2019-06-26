@@ -10,7 +10,7 @@
 // @grant          none
 // @license        MIT
 // @namespace      http://github.com/LunarWatcher/userscripts/MagicEditor
-// @version        1.7.0.0
+// @version        1.7.0.1
 // @description    Fix common grammar/usage annoyances on Stack Exchange posts with a click
 //                 Forked from https://github.com/AstroCB/Stack-Exchange-Editor-Toolkit
 // @include        /^https?:\/\/([\w-]*\.)*((stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com|mathoverflow.net)\/(c\/[^\/]*\/)?(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -185,6 +185,11 @@
                 expr: /http:\/\/j.mp\/PoWehJ/g,
                 replacement: "http://wiki.hashphp.org/PDO_Tutorial_for_MySQL_Developers",
                 reason: App.consts.reasons.sqlWarnings
+            },
+            merciruial1: {
+                expr: /https?:\/\/mercurial.selenic.com\/(.*)/g,
+                relacement: "https://mercurial-scm.org/$1", 
+                reason: "https://meta.stackoverflow.com/q/355960/6296561"
             }
         };
 
