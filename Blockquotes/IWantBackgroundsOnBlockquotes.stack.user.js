@@ -17,6 +17,8 @@
 // @exclude      *://chat.stackoverflow.com/*
 // @exclude      *://blog.stackoverflow.com/*
 // @grant        none
+// @downloadURL  https://github.com/LunarWatcher/userscripts/raw/master/Blockquotes/IWantBackgroundsOnBlockquotes.stack.user.js
+// @updateURL    https://github.com/LunarWatcher/userscripts/raw/master/Blockquotes/IWantBackgroundsOnBlockquotes.stack.meta.js
 // ==/UserScript==
 
 (function() {
