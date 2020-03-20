@@ -11,7 +11,6 @@
 // @match        *://*.askubuntu.com/*
 // @match        *://*.stackapps.com/*
 // @match        *://*.mathoverflow.net/*
-// @match        *://*.area51.stackexchange.com/*
 // @exclude      *://chat.stackexchange.com/*
 // @exclude      *://chat.meta.stackexchange.com/*
 // @exclude      *://chat.stackoverflow.com/*
