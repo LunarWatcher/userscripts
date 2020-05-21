@@ -27,9 +27,8 @@
 blockquote {
     margin-bottom: 10px;
     padding: 10px;
-    background-color: #fbf2d4 !important;
+    background-color: var(--yellow-050) !important;
     border-left: 2px solid #ffeb8e !important;
-    color: black !important;
 }
 
 blockquote::before {
