@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bring back blockquotes with a background
 // @namespace    https://github.com/lunarwatcher/userscripts
-// @version      1.0
+// @version      1.1
 // @description  try to take over the world!
 // @author       Olivia Zoe
 // @match        *://*.stackexchange.com/*
@@ -29,6 +29,7 @@ blockquote {
     padding: 10px;
     background-color: #fbf2d4 !important;
     border-left: 2px solid #ffeb8e !important;
+    color: black;
 }
 
 blockquote::before {
