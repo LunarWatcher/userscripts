@@ -4,7 +4,7 @@ blockquote {
     padding: 10px;
     background-color: #fbf2d4 !important;
     border-left: 2px solid #ffeb8e !important;
-    color: black;
+    color: black !important;
 }
 blockquote::before {
     background: none !important; /*change to the value of border-left for a border with the same style as the new quotes. Setting this to none disables it and entirely reverts votes*/
