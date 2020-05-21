@@ -29,7 +29,7 @@ blockquote {
     padding: 10px;
     background-color: #fbf2d4 !important;
     border-left: 2px solid #ffeb8e !important;
-    color: black;
+    color: black !important;
 }
 
 blockquote::before {
