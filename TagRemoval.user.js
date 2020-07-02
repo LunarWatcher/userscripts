@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.3.0
+// @version      1.3.1
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -72,8 +72,10 @@ const divClass = ".grid.gs8.gsx.pt12.pb16";
 const TAG_CLASS = ".s-tag.rendered-element";
 const EDITOR_CLASS = ".wmd-input";
 const BUTTON_ID = "burn";
+const INLINE_BUTTON_ID = "burn-inline";
 
 const burn_button = "<a href=\"javascript:void(0);\" id='" + BUTTON_ID + "' class='grid--cell s-btn'>Burninate!</a>";
+const burnInline_button = "<a href=\"javascript:void(0);\" id='" + INLINE_BUTTON_ID + "' class='grid--cell s-btn'>Burninate!</a>";
 const auto10k = "<a href=\"javascript:void(0);\" id='auto10k' class='grid--cell s-btn'>Auto burn!</a>";
 const DATA_KEY = "Retagger-";
 const DEBUG = false;
@@ -112,7 +114,7 @@ function init(){
         $(burn_button).appendTo(divClass);
     }else{
         $(burn_button).appendTo('#question ' + divClass);
-        $(burn_button).appendTo("#question .form-submit.grid.gs4.mt8");
+        $(burnInline_button).appendTo("#question .form-submit.grid.gs4.mt8");
     }
     $("#burn").click(clearTags);
     $("#" + INLINE_BUTTON_ID).click(clearTags);
