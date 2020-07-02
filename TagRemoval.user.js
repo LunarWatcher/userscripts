@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.2.4
+// @version      1.3.0
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -74,8 +74,11 @@ const EDITOR_CLASS = ".wmd-input";
 const BUTTON_ID = "burn";
 
 const burn_button = "<a href=\"javascript:void(0);\" id='" + BUTTON_ID + "' class='grid--cell s-btn'>Burninate!</a>";
+const auto10k = "<a href=\"javascript:void(0);\" id='auto10k' class='grid--cell s-btn'>Auto burn!</a>";
 const DATA_KEY = "Retagger-";
 const DEBUG = false;
+
+const INLINE_10K = "#edit-tags";
 
 (function() {
     'use strict';
@@ -108,12 +111,22 @@ function init(){
 
         $(burn_button).appendTo(divClass);
     }else{
-
         $(burn_button).appendTo('#question ' + divClass);
-
+        $(burn_button).appendTo("#question .form-submit.grid.gs4.mt8");
     }
     $("#burn").click(clearTags);
+    $("#" + INLINE_BUTTON_ID).click(clearTags);
+    
+    if ($(INLINE_10K).length > 0) {
+        $(auto10k).appendTo("#question .post-menu");
+        $("#auto10k").click(autoClearTags);
+    }
 
+}
+
+function autoClearTags() {
+    $('#question .edit-post')[0].click();
+    clearTags();
 }
 
 // Burnination methods
