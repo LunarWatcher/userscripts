@@ -82,12 +82,18 @@ const DEBUG = false;
 
 const INLINE_10K = "#edit-tags";
 
+var autoBurn = false;
+
 (function() {
     'use strict';
     StackExchange.using('inlineEditing',function() {
         StackExchange.ready(function() {
             $('#post-form').each(function(){
                 init();
+                if (autoBurn) {
+                    autoBurn = false;
+                    clearTags();
+                }
             });
         });
     });
@@ -127,8 +133,8 @@ function init(){
 }
 
 function autoClearTags() {
+    autoBurn = true;
     $('#question .edit-post')[0].click();
-    clearTags();
 }
 
 // Burnination methods
