@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.3.2
+// @version      1.3.3
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -88,20 +88,26 @@ var autoBurn = false;
     'use strict';
     StackExchange.using('inlineEditing',function() {
         StackExchange.ready(function() {
-            $('#post-form').each(function(){
-                init();
-                if (autoBurn) {
-                    autoBurn = false;
-                    setTimeout(() => {
-                        clearTags();
-                    }, 1000);
-                }
-            });
+            init();
+            if (autoBurn) {
+                autoBurn = false;
+                setTimeout(() => {
+                    clearTags();
+                }, 1000);
+
+            }
         });
     });
     $(document).ajaxComplete(function() {
         StackExchange.ready(function() {
             init();
+            if (autoBurn) {
+                autoBurn = false;
+                setTimeout(() => {
+                    clearTags();
+                }, 1000);
+
+            }
         });
     });
 
