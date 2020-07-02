@@ -49,7 +49,7 @@ const cantBeAlone = {
     "^python-.*": new ReplacementInfo(reasons.python, ["python"]),
     "^java-.*": new ReplacementInfo(reasons.java, ["java"]),
     "^android-studio-.*": new ReplacementInfo(reasons.version, ["android-studio"]),
-    "^excel-vba": new ReplacementInfo("Questions tagged excel-vba should also be tagged with excel and VBA where possible. See meta: https://meta.stackoverflow.com/questions/370095/merging-the-excel-vba-into-vba-speak-now-or-forever-hold-your-peace",
+    "^excel-vba": new ReplacementInfo("excel-vba is being burninated; do not use!",
                                       ["excel", "vba"])
 }
 
