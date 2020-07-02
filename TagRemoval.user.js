@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.3.3
+// @version      1.3.4
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -113,11 +113,16 @@ var autoBurn = false;
 
 })();
 
-function init(){
-
-    if($("#" + BUTTON_ID).length > 0){
+function init(){  
+    if ($("#auto10k").length == 0) {
+        $(auto10k).appendTo("#question .post-menu");
+        $("#auto10k").click(autoClearTags);
+    }
+    
+    if($("#" + BUTTON_ID).length > 0 || $("#" + INLINE_BUTTON_ID).length > 0){
         return;
     }
+    
     if($("#question").length == 0){
         if($("#title").length == 0){
             if(DEBUG)
@@ -132,11 +137,7 @@ function init(){
     }
     $("#burn").click(clearTags);
     $("#" + INLINE_BUTTON_ID).click(clearTags);
-    
-    if ($(INLINE_10K).length > 0 && $("#auto10k").length == 0) {
-        $(auto10k).appendTo("#question .post-menu");
-        $("#auto10k").click(autoClearTags);
-    }
+
 
 }
 
