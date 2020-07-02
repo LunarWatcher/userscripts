@@ -41,6 +41,7 @@ const tagTargets = {
 const removeTagsIfPresent = {
     "android-studio.*": new ReplacementInfo(reasons.ide, androidJavaCombo),
     "intellij-idea.*": new ReplacementInfo(reasons.ide, androidJavaCombo),
+    "excel-vba": new ReplacementInfo("excel-vba is being burninated; DO NOT USE!", ["excel", "vba"]
 }
 
 // TODO more sensible naming
@@ -48,9 +49,7 @@ const cantBeAlone = {
     "^jquery": new ReplacementInfo("jQuery is a library, JS is the language", ["javascript"]),
     "^python-.*": new ReplacementInfo(reasons.python, ["python"]),
     "^java-.*": new ReplacementInfo(reasons.java, ["java"]),
-    "^android-studio-.*": new ReplacementInfo(reasons.version, ["android-studio"]),
-    "^excel-vba": new ReplacementInfo("excel-vba is being burninated; do not use!",
-                                      ["excel", "vba"])
+    "^android-studio-.*": new ReplacementInfo(reasons.version, ["android-studio"])
 }
 
 //Format: "tag name": ["tag replacement", "Replacement reason"]
