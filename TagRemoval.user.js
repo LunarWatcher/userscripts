@@ -127,7 +127,7 @@ function init(){
     $("#burn").click(clearTags);
     $("#" + INLINE_BUTTON_ID).click(clearTags);
     
-    if ($(INLINE_10K).length > 0) {
+    if ($(INLINE_10K).length > 0 && $("#auto10k").length == 0) {
         $(auto10k).appendTo("#question .post-menu");
         $("#auto10k").click(autoClearTags);
     }
