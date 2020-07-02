@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Retagger
 // @namespace    https://github.com/LunarWatcher/userscripts
-// @version      1.2.3
+// @version      1.2.4
 // @description  Easy tag burnination, removal, and retagging
 // @author       Olivia Zoe
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
@@ -40,8 +40,7 @@ const tagTargets = {
 
 const removeTagsIfPresent = {
     "android-studio.*": new ReplacementInfo(reasons.ide, androidJavaCombo),
-    "intellij-idea.*": new ReplacementInfo(reasons.ide, androidJavaCombo),
-    "excel-vba": new ReplacementInfo("excel-vba is being burninated; DO NOT USE!", ["excel", "vba"])
+    "intellij-idea.*": new ReplacementInfo(reasons.ide, androidJavaCombo)
 }
 
 // TODO more sensible naming
@@ -55,6 +54,7 @@ const cantBeAlone = {
 //Format: "tag name": ["tag replacement", "Replacement reason"]
 const tagReplacements = {
     "^checkout$" : ["vcs-checkout", "Checkout is used for questions about finishing transactions, not the version control system feature \"checkout\""],
+    "^excel-vba$": [ "excel vba", "excel-vba is being burninated; DO NOT USE!"]
 };
 
 // NOTE: Additions here are not required to be an array.
