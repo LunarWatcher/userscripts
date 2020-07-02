@@ -7,7 +7,7 @@
 // @include      /^https?:\/\/\w*.?(stackoverflow|stackexchange|serverfault|superuser|askubuntu|stackapps)\.com\/(questions|posts|review|tools)\/(?!tagged\/|new\/).*/
 // @grant        none
 // @downloadURL  https://github.com/LunarWatcher/userscripts/raw/master/TagRemoval.user.js
-// @updateURL    https://github.com/LunarWatcher/userscripts/raw/master/TagRemoval.meta.js
+// @updateURL    https://github.com/LunarWatcher/userscripts/raw/master/TagRemoval.user.js
 // ==/UserScript==
 
 class ReplacementInfo{
@@ -41,7 +41,7 @@ const tagTargets = {
 const removeTagsIfPresent = {
     "android-studio.*": new ReplacementInfo(reasons.ide, androidJavaCombo),
     "intellij-idea.*": new ReplacementInfo(reasons.ide, androidJavaCombo),
-    "excel-vba": new ReplacementInfo("excel-vba is being burninated; DO NOT USE!", ["excel", "vba"]
+    "excel-vba": new ReplacementInfo("excel-vba is being burninated; DO NOT USE!", ["excel", "vba"])
 }
 
 // TODO more sensible naming
